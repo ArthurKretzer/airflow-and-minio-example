@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "stock-portfolio-data"
+version = "0.1.0"
+description = ""
+authors = ["Arthur Raulino Kretzer <arthur.raulino.kretzer@gmail.com>"]
+readme = "README.md"
+packages = [{include = "stock_portfolio_data", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.0.3"
+requests = "^2.31.0"
+backoff = "^2.2.1"
+wheel = "^0.40.0"
+notebook = "^6.5.4"
+ipykernel = "^6.24.0"
+yfinance = "^0.2.22"
+requests-cache = "^1.1.0"
+requests-ratelimiter = "^0.4.0"
+pyrate-limiter = "^2.10.0"
+stocksymbol = "^0.0.5"
+pyarrow = "^12.0.1"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.0"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+isort = "^5.12.0"
+bandit = "^1.7.5"
+mplfinance = "^0.12.9b7"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = 'black'

@@ -20,6 +20,9 @@ requests-ratelimiter = "^0.4.0"
 pyrate-limiter = "^2.10.0"
 stocksymbol = "^0.0.5"
 pyarrow = "^12.0.1"
+ratelimit = "^2.2.1"
+python-dotenv = "^1.0.0"
+pytz = "^2023.3"
 
 
 [tool.poetry.group.test.dependencies]
@@ -31,6 +34,7 @@ black = "^23.3.0"
 isort = "^5.12.0"
 bandit = "^1.7.5"
 mplfinance = "^0.12.9b7"
+flake8 = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from pytz import timezone
-from yf_api import YFApi
+from stock_portfolio_data.yf_api import YFApi
 
 from utils.logger import log
 

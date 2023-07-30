@@ -2,10 +2,15 @@ import os
 from threading import Thread
 
 import pandas as pd
-from stock import Stock
+from stock_portfolio_data.stock import Stock
 
-if __name__ == "__main__":
-    operations = pd.read_parquet(os.path.join("data", "interim", "operações.parquet"))
+import sys
+
+sys.path.append("opt/airflow/dags/data/interim/")
+
+
+def main():
+    operations = pd.read_parquet("./operações.parquet")
     tickers = operations["ativo"].unique()
 
     thread_list = [
@@ -17,3 +22,7 @@ if __name__ == "__main__":
 
     for thread in thread_list:
         thread.join()
+
+
+if __name__ == "__main__":
+    main()

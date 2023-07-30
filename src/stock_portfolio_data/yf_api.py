@@ -1,8 +1,8 @@
 from datetime import timedelta
 
 import yfinance as yf
-from custom_session import CustomSession
-from symbols import Symbols
+from stock_portfolio_data.custom_session import CustomSession
+from stock_portfolio_data.symbols import Symbols
 
 from utils.logger import log
 

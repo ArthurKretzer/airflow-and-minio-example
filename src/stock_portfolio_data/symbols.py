@@ -1,7 +1,7 @@
 import os
 
 import dotenv
-from custom_session import CustomSession
+from stock_portfolio_data.custom_session import CustomSession
 from stocksymbol import StockSymbol
 
 from utils.logger import log

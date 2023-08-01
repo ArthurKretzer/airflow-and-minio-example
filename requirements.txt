@@ -6,3 +6,4 @@ pytz
 requests
 requests_cache
 requests_ratelimiter
+minio

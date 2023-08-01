@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from stock_portfolio_data.main import main
+from airflow.operators.python_operator import PythonVirtualenvOperator
 
 default_args = {
     "owner": "ark",
@@ -20,11 +19,27 @@ dag = DAG(
 
 
 def run_python_script():
+    from stock_portfolio_data.main import main
+
     main()
 
 
-run_script_task = PythonOperator(
-    task_id="stock_porfolio_data_script", python_callable=run_python_script, dag=dag
+run_script_task = PythonVirtualenvOperator(
+    task_id="stock_porfolio_data_script",
+    python_callable=run_python_script,
+    dag=dag,
+    requirements=[
+        "/opt/airflow/src/dist/stock_portfolio_data-0.0.0-py3-none-any.whl",
+        "minio",
+        "pandas",
+        "yfinance",
+        "stocksymbol",
+        "python-dotenv",
+        "pytz",
+        "requests",
+        "requests_cache",
+        "requests_ratelimiter",
+    ],
 )
 
 run_script_task

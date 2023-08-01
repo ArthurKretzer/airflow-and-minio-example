@@ -1,12 +1,14 @@
 import os
 from datetime import datetime
-
+import io
 import numpy as np
 import pandas as pd
 from pytz import timezone
+from minio.error import S3Error
 from stock_portfolio_data.yf_api import YFApi
-
+from stock_portfolio_data.minio import minio_client
 from utils.logger import log
+from io import StringIO
 
 logger = log(f"{__name__}")
 
@@ -18,69 +20,78 @@ class Stock(YFApi):
 
     def _get_operations(self):
         try:
-            operations = pd.read_parquet(
-                os.path.join(
-                    "data",
-                    "interim",
-                    "operações.parquet",
-                )
-            )
+            bucket_name = "interim"
 
-        except FileNotFoundError:
-            operations = pd.read_csv(
-                os.path.join("data", "raw", "operações.CSV"),
-                sep=";",
-                decimal=",",
-                encoding="CP1252",
-            )
-            operations["lucro_pct"] = (
-                operations["lucro_pct"]
-                .fillna("0")
-                .apply(lambda x: x.replace(",", ".").replace("%", ""))
-                .astype(float)
-            )
-            operations["fluxoCx"] = (
-                operations["fluxoCx"]
-                .apply(lambda x: x.replace(".", "").replace(",", "."))
-                .astype(float)
-            )
-            operations["vlrInvest"] = (
-                operations["vlrInvest"]
-                .apply(lambda x: x.replace(".", "").replace(",", "."))
-                .astype(float)
-            )
-            operations["pmAnt"] = (
-                operations["pmAnt"]
-                .apply(lambda x: x.replace(".", "").replace(",", "."))
-                .astype(float)
-            )
-            operations["pmAtual"] = (
-                operations["pmAtual"]
-                .apply(lambda x: x.replace(".", "").replace(",", "."))
-                .astype(float)
-            )
-            operations["vol"] = (
-                operations["vol"]
-                .apply(lambda x: x.replace(".", "").replace(",", "."))
-                .astype(float)
-            )
-            operations["lucro"] = (
-                operations["lucro"]
-                .apply(lambda x: x.replace(".", "").replace(",", "."))
-                .astype(float)
-            )
+            object_name = "operacoes.parquet"
 
-            operations["date"] = pd.to_datetime(operations["date"], dayfirst=True)
-            operations["date"] = pd.to_datetime(operations["date"]).dt.tz_localize(
-                timezone("America/Sao_Paulo")
-            )
+            object_data = minio_client.get_object(bucket_name, object_name)
+            # Convert the object data to a DataFrame
+            operations = pd.read_parquet(io.BytesIO(object_data.read()))
 
-            operations = (
-                operations.groupby("ativo")
-                .apply(self._forward_fill_on_date_ini)
-                .reset_index(drop=True)
-            )
-            operations = operations.sort_values(by=["date"])
+            # operations = pd.read_parquet(
+            #     os.path.join(
+            #         "data",
+            #         "interim",
+            #         "operações.parquet",
+            #     )
+            # )
+        except S3Error as err:
+            logger.error(f"{err}")
+        # except FileNotFoundError:
+        #     operations = pd.read_csv(
+        #         os.path.join("data", "raw", "operações.CSV"),
+        #         sep=";",
+        #         decimal=",",
+        #         encoding="CP1252",
+        #     )
+        #     operations["lucro_pct"] = (
+        #         operations["lucro_pct"]
+        #         .fillna("0")
+        #         .apply(lambda x: x.replace(",", ".").replace("%", ""))
+        #         .astype(float)
+        #     )
+        #     operations["fluxoCx"] = (
+        #         operations["fluxoCx"]
+        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
+        #         .astype(float)
+        #     )
+        #     operations["vlrInvest"] = (
+        #         operations["vlrInvest"]
+        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
+        #         .astype(float)
+        #     )
+        #     operations["pmAnt"] = (
+        #         operations["pmAnt"]
+        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
+        #         .astype(float)
+        #     )
+        #     operations["pmAtual"] = (
+        #         operations["pmAtual"]
+        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
+        #         .astype(float)
+        #     )
+        #     operations["vol"] = (
+        #         operations["vol"]
+        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
+        #         .astype(float)
+        #     )
+        #     operations["lucro"] = (
+        #         operations["lucro"]
+        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
+        #         .astype(float)
+        #     )
+
+        #     operations["date"] = pd.to_datetime(operations["date"], dayfirst=True)
+        #     operations["date"] = pd.to_datetime(operations["date"]).dt.tz_localize(
+        #         timezone("America/Sao_Paulo")
+        #     )
+
+        #     operations = (
+        #         operations.groupby("ativo")
+        #         .apply(self._forward_fill_on_date_ini)
+        #         .reset_index(drop=True)
+        #     )
+        #     operations = operations.sort_values(by=["date"])
 
         if operations.empty:
             raise ValueError(f"No operations found for ticker {self.ticker}.")
@@ -389,13 +400,22 @@ class Stock(YFApi):
 
     def _save_results(self, stock_df):
         logger.info("Saving results...")
-        output_path = os.path.join(
-            "data",
-            "processed",
-            f"{self.ticker.replace('.', '_')}.csv",
-        )
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        stock_df.to_csv(output_path, sep=";", decimal=",", index=False)
+        csv_data = stock_df.to_csv(sep=";", decimal=",", index=False)
+        try:
+            minio_client.put_object(
+                "processed", f"{self.ticker}.csv", StringIO(csv_data), len(csv_data)
+            )
+            logger.info(f"Successfully uploaded {self.ticker} to processed on MinIO.")
+        except S3Error as e:
+            logger.error(f"Error occurred: {e}")
+
+        # output_path = os.path.join(
+        #     "data",
+        #     "processed",
+        #     f"{self.ticker.replace('.', '_')}.csv",
+        # )
+        # os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        # stock_df.to_csv(output_path, sep=";", decimal=",", index=False)
 
     def stock_calculations(self):
         logger.info(f"Calculating for {self.ticker}...")

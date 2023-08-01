@@ -50,12 +50,11 @@ x-airflow-common:
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
 
-  # image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.6.3}
+  &airflow-common
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.6.3}
 
   # build: .
-  &airflow-common
-  environment:
-    &airflow-common-env
+  environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     # For backward compatibility, with Airflow <2.3
@@ -75,19 +74,31 @@ x-airflow-common:
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/src/:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/src/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/airflow_logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/airflow_config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/airflow_plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR:-.}/src/dist:/opt/airflow/src/dist
   user: "${AIRFLOW_UID:-50000}:0"
-  depends_on:
-    &airflow-common-depends-on
+  depends_on: &airflow-common-depends-on
     redis:
       condition: service_healthy
     postgres:
       condition: service_healthy
 
 services:
+  minio:
+    image: minio/minio
+    environment:
+      - MINIO_ROOT_USER=ark
+      - MINIO_ROOT_PASSWORD=96548231
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./data:/data
+    ports:
+      - 9000:9000
+      - 9001:9001
+
   postgres:
     image: postgres:13
     environment:
@@ -315,3 +326,7 @@ services:
 
 volumes:
   postgres-db-volume:
+
+
+networks:
+  minio:

@@ -7,18 +7,16 @@ import pandas as pd
 from stock_portfolio_data.minio_client import minio_client
 from stock_portfolio_data.stock import Stock
 
-# import sys
-
-# sys.path.append("opt/airflow/dags/data/interim/")
-
 bucket_name = "interim"
 
 object_name = "operacoes.parquet"
 
 
 def main(*args, **kwargs):
-    print("stock_symbol_key", kwargs["stock_symbol_key"])
     os.environ["stock_symbol_key"] = kwargs["stock_symbol_key"]
+    os.environ["minio_endpoint"] = kwargs["minio_endpoint"]
+    os.environ["minio_api_access_key"] = kwargs["minio_api_access_key"]
+    os.environ["minio_api_access_secret_key"] = kwargs["minio_api_access_secret_key"]
     try:
         object_data = minio_client.get_object(bucket_name, object_name)
         # Convert the object data to a DataFrame
@@ -39,4 +37,9 @@ def main(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    main(stock_symbol_key="f5892249-b4e8-448b-8b91-6a861f02c311")
+    main(
+        stock_symbol_key="f5892249-b4e8-448b-8b91-6a861f02c311",
+        minio_endpoint="localhost:9000",
+        minio_api_access_key="XBJhoPKpkIqIPYmrgPGh",
+        minio_api_access_secret_key="UJQb2VWWystUFv6WffVtCxWvakYW0HTlrF9tz0yq",
+    )

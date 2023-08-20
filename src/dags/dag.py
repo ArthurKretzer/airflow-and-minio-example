@@ -35,7 +35,12 @@ run_script_task = PythonVirtualenvOperator(
     dag=dag,
     provide_context=True,
     op_args=[],
-    op_kwargs={"stock_symbol_key": Variable.get("stock_symbol_key")},
+    op_kwargs={
+        "stock_symbol_key": Variable.get("stock_symbol_key"),
+        "minio_endpoint": Variable.get("minio_endpoint"),
+        "minio_api_access_key": Variable.get("minio_api_access_key"),
+        "minio_api_access_secret_key": Variable.get("minio_api_access_secret_key"),
+    },
     requirements=[
         "/opt/airflow/src/dist/stock_portfolio_data-0.0.0-py3-none-any.whl",
         "minio",

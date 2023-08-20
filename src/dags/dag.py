@@ -9,7 +9,7 @@ default_args = {
     "start_date": datetime(2023, 8, 12),
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
-    "env": {"stock_symbol_key": Variable.get("stock_symbol_key")},
+    # "env": {"stock_symbol_key": Variable.get("stock_symbol_key")},
 }
 
 dag = DAG(
@@ -20,12 +20,19 @@ dag = DAG(
 )
 
 
-def run_python_script(stock_symbol_key):
+def run_python_script(
+    stock_symbol_key, minio_endpoint, minio_api_access_key, minio_api_access_secret_key
+):
     from stock_portfolio_data.main import main
 
     print("stock_symbol_key", stock_symbol_key)
 
-    main(stock_symbol_key=stock_symbol_key)
+    main(
+        stock_symbol_key=stock_symbol_key,
+        minio_endpoint=minio_endpoint,
+        minio_api_access_key=minio_api_access_key,
+        minio_api_access_secret_key=minio_api_access_secret_key,
+    )
 
 
 # I could use DockerOperator or KubernetesPodOperator to avoid installation overhead by having a pre-built image with the dependencies installed.
@@ -47,7 +54,6 @@ run_script_task = PythonVirtualenvOperator(
         "pandas",
         "yfinance",
         "stocksymbol",
-        "python-dotenv",
         "pytz",
         "requests",
         "requests_cache",

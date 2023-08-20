@@ -1,9 +1,9 @@
 pandas
 yfinance
 stocksymbol
-python-dotenv
 pytz
 requests
 requests_cache
 requests_ratelimiter
 minio
+"./src/dist/stocksymbol-0.0.0-py3-none-any.whl"

@@ -21,9 +21,9 @@ pip install -r requirements.txt
 ## Build stock_portfolio_data module
 
 ```bash
-cd src
-python3 setup.py clean --all
-python3 setup.py bdist_wheel
+cd src && \
+python3 setup.py clean --all && \
+python3 setup.py bdist_wheel && \
 pip install --upgrade --force-reinstall --no-cache-dir dist/stock_portfolio_data-0.0.0-py3-none-any.whl
 ```
 

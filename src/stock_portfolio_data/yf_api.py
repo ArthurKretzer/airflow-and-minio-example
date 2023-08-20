@@ -1,9 +1,9 @@
 from datetime import timedelta
 
 import yfinance as yf
+
 from stock_portfolio_data.custom_session import CustomSession
 from stock_portfolio_data.symbols import Symbols
-
 from utils.logger import log
 
 logger = log("ingestao")
@@ -41,9 +41,7 @@ class YFApi:
             self.get_ticker()
         # History end date on yf is exclusive, but we want it to be virtualy inclusive
         end_date += timedelta(days=1)
-        history = self.ticker_info.history(
-            start=start_date, end=end_date, interval=interval
-        )
+        history = self.ticker_info.history(start=start_date, end=end_date, interval=interval)
         if history.empty:
             raise ValueError(
                 f"No history found for {self.ticker} between {start_date} and {end_date}"

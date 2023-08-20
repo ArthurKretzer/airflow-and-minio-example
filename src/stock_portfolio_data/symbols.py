@@ -1,9 +1,9 @@
 import os
 
 import dotenv
-from stock_portfolio_data.custom_session import CustomSession
 from stocksymbol import StockSymbol
 
+from stock_portfolio_data.custom_session import CustomSession
 from utils.logger import log
 
 logger = log(f"{__name__}")
@@ -22,9 +22,7 @@ class Symbols(StockSymbol):
         self.symbol_list = self._get_symbol_list()
 
     def _get_symbol_list(self):
-        symbol_list = self.get_symbol_list(
-            market=self.market, symbols_only=self.symbols_only
-        )
+        symbol_list = self.get_symbol_list(market=self.market, symbols_only=self.symbols_only)
         if self.market != "US":
             symbol_list = [symbol.split(".")[0] for symbol in symbol_list]
         return symbol_list

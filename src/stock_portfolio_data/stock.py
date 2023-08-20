@@ -1,14 +1,15 @@
-import os
-from datetime import datetime
 import io
+from datetime import datetime
+from io import StringIO
+
 import numpy as np
 import pandas as pd
-from pytz import timezone
 from minio.error import S3Error
+from pytz import timezone
+
+from stock_portfolio_data.minio_client import minio_client
 from stock_portfolio_data.yf_api import YFApi
-from stock_portfolio_data.minio import minio_client
 from utils.logger import log
-from io import StringIO
 
 logger = log(f"{__name__}")
 
@@ -110,22 +111,14 @@ class Stock(YFApi):
         start_date = _ticker_operations["date"].min()
         end_date = datetime.now().date()
 
-        logger.info(
-            f"Searching for {self.ticker} data from {start_date} to {end_date}..."
-        )
+        logger.info(f"Searching for {self.ticker} data from {start_date} to {end_date}...")
         _ticker_history = self.get_ticker_history(start_date, end_date)
 
-        _ticker_dividends = _ticker_history[_ticker_history["Dividends"] != 0][
-            "Dividends"
-        ]
+        _ticker_dividends = _ticker_history[_ticker_history["Dividends"] != 0]["Dividends"]
         _ticker_dividends = _ticker_dividends.reset_index()
-        _ticker_dividends = pd.DataFrame(_ticker_dividends).rename(
-            columns={"Date": "date"}
-        )
+        _ticker_dividends = pd.DataFrame(_ticker_dividends).rename(columns={"Date": "date"})
 
-        _ticker_splits = _ticker_history[_ticker_history["Stock Splits"] != 0][
-            "Stock Splits"
-        ]
+        _ticker_splits = _ticker_history[_ticker_history["Stock Splits"] != 0]["Stock Splits"]
         _ticker_splits = pd.DataFrame(_ticker_splits).rename(columns={"Date": "date"})
 
         _ticker_dividends_and_ops = (
@@ -213,9 +206,7 @@ class Stock(YFApi):
 
         splits = stock_df.loc[split_operations, ["Stock Splits", "qtd_acum"]]
 
-        split_adjust = (splits["Stock Splits"] * splits["qtd_acum"]) - splits[
-            "qtd_acum"
-        ]
+        split_adjust = (splits["Stock Splits"] * splits["qtd_acum"]) - splits["qtd_acum"]
 
         stock_df.loc[split_operations, "adjusted_qtd_acum"] += split_adjust
 
@@ -223,20 +214,14 @@ class Stock(YFApi):
 
     def _adjust_currency(self, stock_df):
         # Original Currency
-        invested_usd = (
-            (stock_df["preco"] * stock_df["qtd"]) + stock_df["taxas"]
-        ).cumsum()
+        invested_usd = ((stock_df["preco"] * stock_df["qtd"]) + stock_df["taxas"]).cumsum()
         stock_df["invested_usd"] = invested_usd
         sell_ops = stock_df["tipoOP"] == "V"
 
-        stock_df["pm_atual_usd"] = np.where(
-            sell_ops, np.nan, invested_usd / stock_df["qtd_acum"]
-        )
+        stock_df["pm_atual_usd"] = np.where(sell_ops, np.nan, invested_usd / stock_df["qtd_acum"])
 
         # sometimes 0/0 division occur and they tend to result in np.inf
-        inf_values = (stock_df["pm_atual_usd"] == np.inf) | (
-            stock_df["pm_atual_usd"] == -np.inf
-        )
+        inf_values = (stock_df["pm_atual_usd"] == np.inf) | (stock_df["pm_atual_usd"] == -np.inf)
 
         stock_df["pm_atual_usd"] = np.where(
             inf_values,
@@ -257,9 +242,7 @@ class Stock(YFApi):
 
         amount_operated_plus_taxes = amount_operated + stock_df["taxas"]
 
-        adjusted_amount_operated_plus_taxes = (
-            amount_operated_plus_taxes * stock_df["ptax"]
-        )
+        adjusted_amount_operated_plus_taxes = amount_operated_plus_taxes * stock_df["ptax"]
 
         stock_df["volume"] = adjusted_amount_operated_plus_taxes
         stock_df["fluxo_cx"] = -adjusted_amount_operated_plus_taxes
@@ -270,9 +253,7 @@ class Stock(YFApi):
         dividend_operations = stock_df["tipoOP"] == "D"
         sell_ops = stock_df["tipoOP"] == "V"
 
-        dividends_received = (
-            stock_df["Dividends"] * stock_df["ptax"] * stock_df["qtd_acum"]
-        )
+        dividends_received = stock_df["Dividends"] * stock_df["ptax"] * stock_df["qtd_acum"]
 
         stock_df["fluxo_cx"] = np.where(
             dividend_operations,
@@ -280,14 +261,10 @@ class Stock(YFApi):
             stock_df["fluxo_cx"],
         )
 
-        stock_df["pm_atual"] = np.where(
-            sell_ops, np.nan, amount_invested / stock_df["qtd_acum"]
-        )
+        stock_df["pm_atual"] = np.where(sell_ops, np.nan, amount_invested / stock_df["qtd_acum"])
 
         # sometimes 0/0 division occur and they tend to result in np.inf
-        inf_values = (stock_df["pm_atual"] == np.inf) | (
-            stock_df["pm_atual"] == -np.inf
-        )
+        inf_values = (stock_df["pm_atual"] == np.inf) | (stock_df["pm_atual"] == -np.inf)
 
         stock_df["pm_atual"] = np.where(
             inf_values,
@@ -398,12 +375,19 @@ class Stock(YFApi):
         stock_df = self._calculate_adjusted_profits(stock_df)
         return stock_df
 
-    def _save_results(self, stock_df):
+    def _save_results(self, stock_df: pd.DataFrame):
         logger.info("Saving results...")
         csv_data = stock_df.to_csv(sep=";", decimal=",", index=False)
+        parquet_data = stock_df.to_parquet()
         try:
             minio_client.put_object(
-                "processed", f"{self.ticker}.csv", StringIO(csv_data), len(csv_data)
+                "processed",
+                f"{self.ticker}.csv",
+                io.BytesIO(csv_data.encode("utf-8")),
+                len(csv_data),
+            )
+            minio_client.put_object(
+                "processed", f"{self.ticker}.parquet", io.BytesIO(parquet_data), len(parquet_data)
             )
             logger.info(f"Successfully uploaded {self.ticker} to processed on MinIO.")
         except S3Error as e:

@@ -1,11 +1,9 @@
 import io
 from datetime import datetime
-from io import StringIO
 
 import numpy as np
 import pandas as pd
 from minio.error import S3Error
-from pytz import timezone
 
 from stock_portfolio_data.minio_client import minio_client
 from stock_portfolio_data.yf_api import YFApi
@@ -29,70 +27,9 @@ class Stock(YFApi):
             # Convert the object data to a DataFrame
             operations = pd.read_parquet(io.BytesIO(object_data.read()))
 
-            # operations = pd.read_parquet(
-            #     os.path.join(
-            #         "data",
-            #         "interim",
-            #         "operações.parquet",
-            #     )
-            # )
         except S3Error as err:
-            logger.error(f"{err}")
-        # except FileNotFoundError:
-        #     operations = pd.read_csv(
-        #         os.path.join("data", "raw", "operações.CSV"),
-        #         sep=";",
-        #         decimal=",",
-        #         encoding="CP1252",
-        #     )
-        #     operations["lucro_pct"] = (
-        #         operations["lucro_pct"]
-        #         .fillna("0")
-        #         .apply(lambda x: x.replace(",", ".").replace("%", ""))
-        #         .astype(float)
-        #     )
-        #     operations["fluxoCx"] = (
-        #         operations["fluxoCx"]
-        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
-        #         .astype(float)
-        #     )
-        #     operations["vlrInvest"] = (
-        #         operations["vlrInvest"]
-        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
-        #         .astype(float)
-        #     )
-        #     operations["pmAnt"] = (
-        #         operations["pmAnt"]
-        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
-        #         .astype(float)
-        #     )
-        #     operations["pmAtual"] = (
-        #         operations["pmAtual"]
-        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
-        #         .astype(float)
-        #     )
-        #     operations["vol"] = (
-        #         operations["vol"]
-        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
-        #         .astype(float)
-        #     )
-        #     operations["lucro"] = (
-        #         operations["lucro"]
-        #         .apply(lambda x: x.replace(".", "").replace(",", "."))
-        #         .astype(float)
-        #     )
-
-        #     operations["date"] = pd.to_datetime(operations["date"], dayfirst=True)
-        #     operations["date"] = pd.to_datetime(operations["date"]).dt.tz_localize(
-        #         timezone("America/Sao_Paulo")
-        #     )
-
-        #     operations = (
-        #         operations.groupby("ativo")
-        #         .apply(self._forward_fill_on_date_ini)
-        #         .reset_index(drop=True)
-        #     )
-        #     operations = operations.sort_values(by=["date"])
+            logger.error(f"{type(err).__name__} - {err}")
+            operations = pd.DataFrame()
 
         if operations.empty:
             raise ValueError(f"No operations found for ticker {self.ticker}.")
@@ -114,10 +51,12 @@ class Stock(YFApi):
         logger.info(f"Searching for {self.ticker} data from {start_date} to {end_date}...")
         _ticker_history = self.get_ticker_history(start_date, end_date)
 
+        logger.info(f"Getting {self.ticker} dividends...")
         _ticker_dividends = _ticker_history[_ticker_history["Dividends"] != 0]["Dividends"]
         _ticker_dividends = _ticker_dividends.reset_index()
         _ticker_dividends = pd.DataFrame(_ticker_dividends).rename(columns={"Date": "date"})
 
+        logger.info(f"Getting {self.ticker} splits...")
         _ticker_splits = _ticker_history[_ticker_history["Stock Splits"] != 0]["Stock Splits"]
         _ticker_splits = pd.DataFrame(_ticker_splits).rename(columns={"Date": "date"})
 
@@ -128,6 +67,7 @@ class Stock(YFApi):
         )
 
         _ticker_dividends_and_ops["tipoOP"].fillna("D", inplace=True)
+        logger.info(f"Processed {self.ticker} dividends...")
 
         _ticker_dividends_and_ops = (
             pd.concat([_ticker_dividends_and_ops, _ticker_splits])
@@ -148,6 +88,7 @@ class Stock(YFApi):
             "I",
             _ticker_dividends_and_ops["tipoOP"],
         )
+        logger.info(f"Processed {self.ticker} splits...")
 
         _ticker_dividends_and_ops["ativo"].fillna(f"{self.ticker}", inplace=True)
 
@@ -187,6 +128,7 @@ class Stock(YFApi):
 
         if "Stock Splits" not in _ticker_dividends_and_ops.columns:
             _ticker_dividends_and_ops["Stock Splits"] = 1
+        logger.info(f"Filled {self.ticker} missing data...")
 
         return _ticker_dividends_and_ops
 
@@ -391,22 +333,16 @@ class Stock(YFApi):
             )
             logger.info(f"Successfully uploaded {self.ticker} to processed on MinIO.")
         except S3Error as e:
-            logger.error(f"Error occurred: {e}")
-
-        # output_path = os.path.join(
-        #     "data",
-        #     "processed",
-        #     f"{self.ticker.replace('.', '_')}.csv",
-        # )
-        # os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        # stock_df.to_csv(output_path, sep=";", decimal=",", index=False)
+            logger.error(f"Error occurred: {type(e).__name__} - {repr(e)}")
 
     def stock_calculations(self):
         logger.info(f"Calculating for {self.ticker}...")
         try:
             stock_df = self._prepare_stock()
         except ValueError as e:
-            logger.error(f"Error while calculating {self.ticker}. Exception: {e}")
+            logger.error(
+                f"Error while calculating {self.ticker}. Exception: {type(e).__name__} - {repr(e)}"
+            )
             return None
 
         logger.info("Adjusting stock quantity...")

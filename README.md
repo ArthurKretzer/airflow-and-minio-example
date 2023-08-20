@@ -3,3 +3,9 @@ pip install --upgrade --force-reinstall --no-cache-dir dist/stock_portfolio_data
 airflow dags reserialize
 
 python3 setup.py clean --all
+
+docker exec -it stock-portfolio-data-airflow-scheduler-1 bash
+
+python setup.py bdist_wheel
+
+source .venv/Scripts/activate

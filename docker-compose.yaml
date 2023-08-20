@@ -173,6 +173,8 @@ services:
   airflow-worker:
     <<: *airflow-common
     command: celery worker
+    tmpfs:
+      - '/opt/airflow/'
     healthcheck:
       test:
         - "CMD-SHELL"

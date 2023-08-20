@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Arthur Raulino Kretzer <arthur.raulino.kretzer@gmail.com>"]
 readme = "README.md"
-packages = [{include = "stock_portfolio_data", from = "src"}]
+packages = [{ include = "stock_portfolio_data", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -40,5 +40,22 @@ flake8 = "^6.0.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.black]
+line-length = 99 # override black's default line-length
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.tox
+  | venv
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
 [tool.isort]
-profile = 'black'
+# make it compatible with black
+profile = "black"

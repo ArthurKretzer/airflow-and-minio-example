@@ -1,10 +1,11 @@
+import io
+import os
 from threading import Thread
 
-from minio.error import S3Error
-import io
 import pandas as pd
+
+from stock_portfolio_data.minio_client import minio_client
 from stock_portfolio_data.stock import Stock
-from stock_portfolio_data.minio import minio_client
 
 # import sys
 
@@ -15,20 +16,20 @@ bucket_name = "interim"
 object_name = "operacoes.parquet"
 
 
-def main():
+def main(*args, **kwargs):
+    print("stock_symbol_key", kwargs["stock_symbol_key"])
+    os.environ["stock_symbol_key"] = kwargs["stock_symbol_key"]
     try:
         object_data = minio_client.get_object(bucket_name, object_name)
         # Convert the object data to a DataFrame
         operations = pd.read_parquet(io.BytesIO(object_data.read()))
-    except S3Error as err:
+    except Exception as err:
         print(err)
 
     # operations = pd.read_parquet("./operações.parquet")
     tickers = operations["ativo"].unique()
 
-    thread_list = [
-        Thread(target=Stock(ticker).stock_calculations) for ticker in tickers
-    ]
+    thread_list = [Thread(target=Stock(ticker).stock_calculations) for ticker in tickers]
 
     for thread in thread_list:
         thread.start()
@@ -38,4 +39,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(stock_symbol_key="f5892249-b4e8-448b-8b91-6a861f02c311")

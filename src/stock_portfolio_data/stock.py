@@ -36,11 +36,6 @@ class Stock(YFApi):
 
         return operations[operations["ativo"] == f"{self.ticker}"]
 
-    def _forward_fill_on_date_ini(df):
-        df["date_ini"] = df["date_ini"].fillna(method="ffill")
-        df["date_ini"] = pd.to_datetime(df["date_ini"], dayfirst=True)
-        return df
-
     def _prepare_stock(self):
         logger.info(f"Building stock infos for ticker {self.ticker}...")
         _ticker_operations = self._get_operations()

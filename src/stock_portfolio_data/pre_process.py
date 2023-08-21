@@ -10,7 +10,7 @@ from utils.logger import log
 logger = log(f"{__name__}")
 
 
-def get_raw_operations(*args, **kwargs) -> pd.DataFrame:
+def process_raw_operations(*args, **kwargs) -> pd.DataFrame:
     os.environ["minio_endpoint"] = kwargs["minio_endpoint"]
     os.environ["minio_api_access_key"] = kwargs["minio_api_access_key"]
     os.environ["minio_api_access_secret_key"] = kwargs["minio_api_access_secret_key"]
@@ -76,13 +76,17 @@ def process_csv_file(csv_operations: pd.DataFrame) -> pd.DataFrame:
     )
 
     csv_operations = (
-        csv_operations.groupby("ativo")
-        .apply(self._forward_fill_on_date_ini)
-        .reset_index(drop=True)
+        csv_operations.groupby("ativo").apply(_forward_fill_on_date_ini).reset_index(drop=True)
     )
     csv_operations = csv_operations.sort_values(by=["date"])
 
     return csv_operations
+
+
+def _forward_fill_on_date_ini(df):
+    df["date_ini"] = df["date_ini"].fillna(method="ffill")
+    df["date_ini"] = pd.to_datetime(df["date_ini"], dayfirst=True)
+    return df
 
 
 def save_parquet_operations(csv_operations: pd.DataFrame):
@@ -100,7 +104,7 @@ def save_parquet_operations(csv_operations: pd.DataFrame):
 
 
 if __name__ == "__main__":
-    process_csv_file(
+    process_raw_operations(
         minio_endpoint="localhost:9000",
         minio_api_access_key="XBJhoPKpkIqIPYmrgPGh",
         minio_api_access_secret_key="UJQb2VWWystUFv6WffVtCxWvakYW0HTlrF9tz0yq",

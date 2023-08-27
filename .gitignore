@@ -165,3 +165,4 @@ poetry.lock
 yfinance.cache
 notebooks/yfinance.cache
 airflow_logs/scheduler/latest
+dados_operacoes.csv

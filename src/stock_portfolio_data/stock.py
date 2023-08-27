@@ -46,6 +46,8 @@ class Stock(YFApi):
         logger.info(f"Searching for {self.ticker} data from {start_date} to {end_date}...")
         _ticker_history = self.get_ticker_history(start_date, end_date)
 
+        self.save_ticker_history(_ticker_history)
+
         logger.info(f"Getting {self.ticker} dividends...")
         _ticker_dividends = _ticker_history[_ticker_history["Dividends"] != 0]["Dividends"]
         _ticker_dividends = _ticker_dividends.reset_index()
@@ -299,6 +301,20 @@ class Stock(YFApi):
         stock_df = self._calculate_raw_profits(stock_df)
         stock_df = self._calculate_adjusted_profits(stock_df)
         return stock_df
+
+    def save_ticker_history(self, _ticker_history: pd.DataFrame):
+        logger.info("Saving results...")
+        parquet_data = _ticker_history.to_parquet()
+        try:
+            minio_client.put_object(
+                "raw",
+                f"extracted_at={datetime.now().strftime('%Y-%m-%d')}/{self.ticker}.parquet",
+                io.BytesIO(parquet_data),
+                len(parquet_data),
+            )
+            logger.info(f"Successfully uploaded {self.ticker} to processed on MinIO.")
+        except S3Error as e:
+            logger.error(f"Error occurred: {type(e).__name__} - {repr(e)}")
 
     def _save_results(self, stock_df: pd.DataFrame):
         logger.info("Saving results...")

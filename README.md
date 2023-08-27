@@ -1,7 +1,12 @@
 # Data processing for stock-portfolio project
 
 You need to have installed docker and docker compose in your machine.
+
 This project requires Python 3.11
+
+Processing flowchat
+
+![Application Data Flowchart](./images/flowchart.png)
 
 ## Activate venv in Linux
 

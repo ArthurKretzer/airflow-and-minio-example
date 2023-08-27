@@ -1,5 +1,8 @@
 # Data processing for stock-portfolio project
 
+You need to have installed docker and docker compose in your machine.
+This project requires Python 3.11
+
 ## Activate venv in Linux
 
 ```bash
@@ -17,6 +20,20 @@ source .venv/Scripts/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+## Run.py
+
+To start the application you need to run python.py to setup de environment.
+
+```bash
+python3 run.py
+```
+
+This will start airflow and minio.
+The script will prompt you to update varibles.json with the minio_api_access_key and minio_api_access_secret_key that you should create accessing minio console.
+When you finish it, press enter to continue the script.
+
+After the script end, you should access airflow, go to admin > variables and import varibles.json.
 
 ## Build stock_portfolio_data module
 

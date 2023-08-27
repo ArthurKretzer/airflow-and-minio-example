@@ -4,7 +4,7 @@ You need to have installed docker and docker compose in your machine.
 
 This project requires Python 3.11
 
-Processing flowchat
+## Data Processing flowchart
 
 ![Application Data Flowchart](./images/flowchart.png)
 

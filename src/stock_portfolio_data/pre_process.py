@@ -39,45 +39,45 @@ def process_raw_operations(*args, **kwargs) -> pd.DataFrame:
 
 
 def process_csv_file(csv_operations: pd.DataFrame) -> pd.DataFrame:
-    csv_operations["lucro_pct"] = (
-        csv_operations["lucro_pct"]
-        .fillna("0")
-        .apply(lambda x: x.replace(",", ".").replace("%", ""))
-        .astype(float)
-    )
-    csv_operations["fluxoCx"] = (
-        csv_operations["fluxoCx"]
-        .apply(lambda x: x.replace(".", "").replace(",", "."))
-        .astype(float)
-    )
-    csv_operations["vlrInvest"] = (
-        csv_operations["vlrInvest"]
-        .apply(lambda x: x.replace(".", "").replace(",", "."))
-        .astype(float)
-    )
-    csv_operations["pmAnt"] = (
-        csv_operations["pmAnt"].apply(lambda x: x.replace(".", "").replace(",", ".")).astype(float)
-    )
-    csv_operations["pmAtual"] = (
-        csv_operations["pmAtual"]
-        .apply(lambda x: x.replace(".", "").replace(",", "."))
-        .astype(float)
-    )
-    csv_operations["vol"] = (
-        csv_operations["vol"].apply(lambda x: x.replace(".", "").replace(",", ".")).astype(float)
-    )
-    csv_operations["lucro"] = (
-        csv_operations["lucro"].apply(lambda x: x.replace(".", "").replace(",", ".")).astype(float)
-    )
+    # csv_operations["lucro_pct"] = (
+    #     csv_operations["lucro_pct"]
+    #     .fillna("0")
+    #     .apply(lambda x: x.replace(",", ".").replace("%", ""))
+    #     .astype(float)
+    # )
+    # csv_operations["fluxoCx"] = (
+    #     csv_operations["fluxoCx"]
+    #     .apply(lambda x: x.replace(".", "").replace(",", "."))
+    #     .astype(float)
+    # )
+    # csv_operations["vlrInvest"] = (
+    #     csv_operations["vlrInvest"]
+    #     .apply(lambda x: x.replace(".", "").replace(",", "."))
+    #     .astype(float)
+    # )
+    # csv_operations["pmAnt"] = (
+    #     csv_operations["pmAnt"].apply(lambda x: x.replace(".", "").replace(",", ".")).astype(float)
+    # )
+    # csv_operations["pmAtual"] = (
+    #     csv_operations["pmAtual"]
+    #     .apply(lambda x: x.replace(".", "").replace(",", "."))
+    #     .astype(float)
+    # )
+    # csv_operations["vol"] = (
+    #     csv_operations["vol"].apply(lambda x: x.replace(".", "").replace(",", ".")).astype(float)
+    # )
+    # csv_operations["lucro"] = (
+    #     csv_operations["lucro"].apply(lambda x: x.replace(".", "").replace(",", ".")).astype(float)
+    # )
 
     csv_operations["date"] = pd.to_datetime(csv_operations["date"], dayfirst=True)
     csv_operations["date"] = pd.to_datetime(csv_operations["date"]).dt.tz_localize(
         timezone("America/Sao_Paulo")
     )
 
-    csv_operations = (
-        csv_operations.groupby("ativo").apply(_forward_fill_on_date_ini).reset_index(drop=True)
-    )
+    # csv_operations = (
+    #     csv_operations.groupby("ativo").apply(_forward_fill_on_date_ini).reset_index(drop=True)
+    # )
     csv_operations = csv_operations.sort_values(by=["date"])
 
     return csv_operations

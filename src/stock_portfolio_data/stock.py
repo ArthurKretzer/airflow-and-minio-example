@@ -92,10 +92,6 @@ class Stock(YFApi):
             [
                 "preco",
                 "qtd",
-                "lucro_pct",
-                "lucro",
-                "irrf",
-                "vlrInvest",
                 "taxas",
                 "Dividends",
             ],
@@ -104,15 +100,7 @@ class Stock(YFApi):
         _ticker_dividends_and_ops.loc[
             :,
             [
-                "pmAtual",
-                "date_ini",
-                "pmAtual_usd",
-                "pmAtual_ptax",
-                "classe",
                 "moeda",
-                "qtdAtual",
-                "qtdAnt",
-                "pmAnt",
             ],
         ].ffill(inplace=True)
 
@@ -319,12 +307,15 @@ class Stock(YFApi):
         try:
             minio_client.put_object(
                 "processed",
-                f"{self.ticker}.csv",
+                f"processed_at={datetime.now().strftime('%Y-%m-%d')}/{self.ticker}.csv",
                 io.BytesIO(csv_data.encode("utf-8")),
                 len(csv_data),
             )
             minio_client.put_object(
-                "processed", f"{self.ticker}.parquet", io.BytesIO(parquet_data), len(parquet_data)
+                "processed",
+                f"processed_at={datetime.now().strftime('%Y-%m-%d')}/{self.ticker}.parquet",
+                io.BytesIO(parquet_data),
+                len(parquet_data),
             )
             logger.info(f"Successfully uploaded {self.ticker} to processed on MinIO.")
         except S3Error as e:
